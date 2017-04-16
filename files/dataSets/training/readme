@@ -1,0 +1,8 @@
+文件信息：
+    weather_info_json.txt,是训练数据集上的天气信息，可以根据日期直接取得相应的天气信息,weather_dic = json.loads(jstr) ## 天气信息可以直接用这种方式获取
+    weather_info_predict_json.txt,是测试数据集上的天气信息
+    task1，为平均时间预测相应文件存放该文件夹下
+        子文件夹：A2,A3...为相应的预测路线文件夹，
+            **-**-**文件为对应的模型文件
+            **-**-**_features.npy 文件为对应时间段的特征文件
+            **-**-**_labels.npy 文件为对应时间段的label文件

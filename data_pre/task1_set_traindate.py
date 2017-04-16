@@ -23,6 +23,18 @@ time_windowset = ['08-00-00',
     ]
 path = config.get_home_dir() + 'files/dataSets/training/task1/'
 
+def normalize_weather_info():
+    '''
+    归一化天气信息,并对相应的天气赋相应的权值
+    :return: store to files
+    '''
+    jstr = open(config.get_home_dir() + 'files/dataSets/training/weather_info_json.txt', 'r').read()
+    out_file = 'files/dataSets/training/weather_info_updated_json.txt','r'
+    old_weather_dic = json.loads(jstr)
+    for dat  in old_weather_dic.keys():
+        tmp_info = old_weather_dic[dat]
+
+
 def seperate_train_data(sourcefolder,sourcefile):
     '''
     source file is  :files/dataSets/training/task1/training_20min_avg_travel_time.csv
