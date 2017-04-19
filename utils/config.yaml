@@ -1,3 +1,4 @@
 name : xiaoweiwei
 HOME_DIR : /home/zw/Documents/project/tianchi/
 TITLE_WEIGHT: 3
+weather_weight : [1,1,1,1,1,1,1]
