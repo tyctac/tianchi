@@ -6,6 +6,9 @@ from utils import config
 import numpy
 import os,sys
 import xgboost
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+
 
 route_set = ['B3','B1','A3','A2','C3','C1']
 time_windowset = ['08-00-00',
@@ -237,4 +240,13 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+    dates = ['01/02/1991','01/03/1991','01/04/1991']
+    xs = [datetime.strptime(d,'%m/%d/%Y').date() for d in dates]
+    ys = range(len(xs))
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m/%d/%Y'))
+    plt.gca().xaxis.set_major_locator(mdates.DayLocator())
+    # Plot
+    plt.plot(xs,ys)
+    plt.gcf().autofmt_xdate() #
+    plt.show()
