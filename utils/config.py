@@ -2,8 +2,9 @@
 import yaml
 import sys,os
 
-def get_home_dir():
-    return os.path.dirname(os.getcwd())
+def get_home_dir(): ## 注意  在这种情况下 字符串'tianchi'只能出现在项目根目录中,否则会出错
+    oristr = os.getcwd()
+    return oristr.split('tianchi')[0] + 'tianchi/'
 
 def get_title_weight():
     hir = get_home_dir()
@@ -19,7 +20,7 @@ def get_weather_weight():
     return x['weather_weight']
 
 def main():
-    x =  get_weather_weight()
+    x =  get_home_dir()
     print x
 
 

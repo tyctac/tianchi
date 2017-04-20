@@ -1,31 +1,30 @@
-#encoding=utf8
+# encoding=utf8
 import math
 import json
-from datetime import datetime,timedelta
+from datetime import datetime, timedelta
 from utils import config
 import numpy
-import os,sys
+import os, sys
 import xgboost
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
-import pylab
 
-
-route_set = ['B3','B1','A3','A2','C3','C1']
+route_set = ['B3', 'B1', 'A3', 'A2', 'C3', 'C1']
 time_windowset = ['08-00-00',
-    '08-20-00',
-    '08-40-00',
-    '09-00-00',
-    '09-20-00',
-    '09-40-00',
-    '17-00-00',
-    '17-20-00',
-    '17-40-00',
-    '18-00-00',
-    '18-20-00',
-    '18-40-00',
-    ]
+                  '08-20-00',
+                  '08-40-00',
+                  '09-00-00',
+                  '09-20-00',
+                  '09-40-00',
+                  '17-00-00',
+                  '17-20-00',
+                  '17-40-00',
+                  '18-00-00',
+                  '18-20-00',
+                  '18-40-00',
+                  ]
 path = config.get_home_dir() + '/files/dataSets/training/task1/'
+
 
 def normalize_weather_info():
     '''
@@ -33,20 +32,20 @@ def normalize_weather_info():
     :return: store to files
     '''
     jstr = open(config.get_home_dir() + 'files/dataSets/training/weather_info_json.txt', 'r').read()
-    out_file = 'files/dataSets/training/weather_info_updated_json.txt','r'
+    out_file = 'files/dataSets/training/weather_info_updated_json.txt', 'r'
     old_weather_dic = json.loads(jstr)
-    for dat  in old_weather_dic.keys():
+    for dat in old_weather_dic.keys():
         tmp_info = old_weather_dic[dat]
 
 
-def seperate_train_data(sourcefolder,sourcefile): ## sourcefolder : A2, sourcefile:A2.csv
+def seperate_train_data(sourcefolder, sourcefile):  ## sourcefolder : A2, sourcefile:A2.csv
     '''
     source file is  :files/dataSets/training/task1/training_20min_avg_travel_time.csv
     :param sourcefile:
     :return:
     '''
     in_file_name = path + sourcefolder + sourcefile
-    fr = open(in_file_name,'r')
+    fr = open(in_file_name, 'r')
     fr.readline()
     time_data = fr.readlines()
     fr.close()
@@ -56,26 +55,21 @@ def seperate_train_data(sourcefolder,sourcefile): ## sourcefolder : A2, sourcefi
     # 时间字符串与对应的存储对象的字典
     store_dic = {}
 
-    jstr = open(config.get_home_dir() + 'files/dataSets/training/weather_info_json.txt','r').read()
+    jstr = open(config.get_home_dir() + 'files/dataSets/training/weather_info_json.txt', 'r').read()
     file_tmp_path = path + sourcefolder
-    weather_dic = json.loads(jstr) ## 天气对象
+    weather_dic = json.loads(jstr)  ## 天气对象
     eta = []
-    valid_re = 1
-    date_set = []
-    slices = 1
-    old_datestr = '2016-07-19'
     for i in range(len(time_data)):
-        # print valid_re
-        # valid_re += 1
         tmp = []
-        the_traj = time_data[i].replace('""','').split(',')
+        the_traj = time_data[i].replace('""', '').split(',')
         intersection_id = the_traj[0]
-        tollgate_id  = the_traj[1]
+        tollgate_id = the_traj[1]
         start_time = the_traj[2]
         start_time = start_time[2:]
-        tm = datetime.strptime(start_time,"%Y-%m-%d %H:%M:%S")
+        print start_time
+        tm = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
         weekday = tm.weekday()
-        wds = [0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+        wds = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         wds[weekday] = 1.0
         tmp.extend(wds)
         ## 天气值应该都在吧,按照日期应该没有缺失??
@@ -90,13 +84,6 @@ def seperate_train_data(sourcefolder,sourcefile): ## sourcefolder : A2, sourcefi
             tmp.extend([float(w) for w in tmpob['9']])
             tmp.extend([float(w) for w in tmpob['15']])
             tmp.extend([float(w) for w in tmpob['18']])
-        if datestr == old_datestr:
-            slices +=1
-        else:
-            if slices != 12:
-                print old_datestr,' slices :',slices
-            slices = 1
-            old_datestr = datestr
         if timestr in store_dic.keys():
             time_window_attrs = store_dic[timestr]['attrs']
             time_window_etas = store_dic[timestr]['etas']
@@ -116,12 +103,10 @@ def seperate_train_data(sourcefolder,sourcefile): ## sourcefolder : A2, sourcefi
         label = file_tmp_path + k + '_labels'
         ft = store_dic[k]['attrs']
         ea = store_dic[k]['etas']
-        npary = numpy.array(ft,dtype = float)
-        numpy.save(feature,npary)
-        npary = numpy.array(ea,dtype = float)
-        numpy.save(label,npary)
-    f = open('date_set.txt','w')
-    f.write('\n'.join(date_set))
+        npary = numpy.array(ft, dtype=float)
+        numpy.save(feature, npary)
+        npary = numpy.array(ea, dtype=float)
+        numpy.save(label, npary)
     return
 
 
@@ -130,8 +115,8 @@ def predict(sourcefolder):
     file_tmp_path = path + sourcefolder
     out_file_path = path + sourcefolder + 'result.csv'
     weather_dic = json.loads(jstr)  ## 天气对象
-    date1 = datetime.strptime('2016-10-18','%Y-%m-%d')
-    date2 = datetime.strptime('2016-10-25','%Y-%m-%d')
+    date1 = datetime.strptime('2016-10-18', '%Y-%m-%d')
+    date2 = datetime.strptime('2016-10-25', '%Y-%m-%d')
     d1 = date1
     tollgate_id = sourcefolder[0]
     intersection_id = sourcefolder[1]
@@ -139,7 +124,7 @@ def predict(sourcefolder):
     while d1 < date2:
         ## 如果这天天气不存在
         pass
-        time_date = datetime.strftime(d1,"%Y-%m-%d")
+        time_date = datetime.strftime(d1, "%Y-%m-%d")
         for twindow in time_windowset:
             ## 生成收费站 和路口id
             tmpstr = str(tollgate_id) + ','
@@ -149,11 +134,11 @@ def predict(sourcefolder):
             minute = int(hms[1])
             second = int(hms[1])
             window_start = time_date + ' ' + hms[0] + ':' + hms[1] + ':' + hms[2]
-            window_start_time = datetime.strptime(window_start,'%Y-%m-%d %H:%M:%S')
+            window_start_time = datetime.strptime(window_start, '%Y-%m-%d %H:%M:%S')
             window_end_time = window_start_time + timedelta(minutes=20)
-            window_end = datetime.strftime(window_end_time,'%Y-%m-%d %H:%M:%S')
+            window_end = datetime.strftime(window_end_time, '%Y-%m-%d %H:%M:%S')
             ## 生成时间窗口字符串
-            tmpstr += '"[' + window_start +',' + window_end+')",'
+            tmpstr += '"[' + window_start + ',' + window_end + ')",'
             ## 从文件中载入模型
             modelfile = path + sourcefolder + twindow
             bst = xgboost.Booster(model_file=modelfile)
@@ -171,14 +156,11 @@ def predict(sourcefolder):
             dtest = xgboost.DMatrix(feature_vector)
             eta = bst.predict(dtest)
             tmpstr += str(eta[0]) + '\n'
-            restr += tmpstr ## not neccessary
+            restr += tmpstr  ## not neccessary
         d1 = d1 + timedelta(days=1)
 
-    f = open(out_file_path,'w')
+    f = open(out_file_path, 'w')
     f.write(restr)
-
-
-
 
 
 def store_train_model(source_folder):
@@ -197,9 +179,9 @@ def store_train_model(source_folder):
         print tmpfeature.shape
         tmplabel = numpy.load(label_name)
         print tmplabel.shape
-        dtrain = xgboost.DMatrix(tmpfeature,label = tmplabel)
-        bst = xgboost.train(plst,dtrain,num_round)
-        bst.save_model(path+source_folder+timestr)
+        dtrain = xgboost.DMatrix(tmpfeature, label=tmplabel)
+        bst = xgboost.train(plst, dtrain, num_round)
+        bst.save_model(path + source_folder + timestr)
 
 
 def get_train_matrix_dic(source_folder):
@@ -212,14 +194,15 @@ def get_train_matrix_dic(source_folder):
     return ret
 
 
-def get_weather_info(fname): ## predict weather file : /home/zw/Documents/project/tianchi/files/dataSets/testing_phase1/weather (table 7)_test1.csv
-    f = open(fname,'r')
+def get_weather_info(
+        fname):  ## predict weather file : /home/zw/Documents/project/tianchi/files/dataSets/testing_phase1/weather (table 7)_test1.csv
+    f = open(fname, 'r')
     head = f.readline()
-    head = head.strip().replace('"','').split(',')
+    head = head.strip().replace('"', '').split(',')
     retdic = {}
     hir = config.get_home_dir()
     weather_info = f.readlines()
-    weather_info = [ w.strip().replace('"','').split(',') for w in weather_info]
+    weather_info = [w.strip().replace('"', '').split(',') for w in weather_info]
     for wi in weather_info:
         if wi[0] in retdic.keys():
             tmpdic = retdic[wi[0]]
@@ -231,43 +214,34 @@ def get_weather_info(fname): ## predict weather file : /home/zw/Documents/projec
             retdic[wi[0]] = tmpdic
     print '1'
     retstr = json.dumps(retdic)
-    f = open(hir + 'files/dataSets/training/weather_info_predict_json.txt','w')
+    f = open(hir + 'files/dataSets/training/weather_info_predict_json.txt', 'w')
     f.write(retstr)
 
-def plot_data(source_folder):
+
+def plot_data():
     date1 = datetime.strptime('2016-07-19', '%Y-%m-%d')
     date2 = datetime.strptime('2016-10-17', '%Y-%m-%d')
     d1 = date1
     dates = []
-    while d1 <= date2:
+    while d1 < date2:
         dates.append(d1.date())
         d1 = d1 + timedelta(days=1)
-    i=1
     for d in dates:
-        print i
-        i += 1
         print d
 
     ## set 12 timewindowset -label
     ys_set = []
     for tm in time_windowset:
-        filename = tm+'_labels.npy'
-        npy_path = path + source_folder + filename
-        ys_set.append(list(numpy.load(npy_path)))
-    for i in range(len(time_windowset)):
-        pylab.plot(dates,ys_set[i])
-    pylab.xlabel('dates')
-    pylab.ylabel('eta')
-    pylab.title('different time window  vs eta')
+        filename = tm + '_labels.npy'
 
-
-    # ys = range(len(dates))
-    # plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m/%d/%Y'))
-    # plt.gca().xaxis.set_major_locator(mdates.DayLocator())
-    # # Plot
-    # plt.plot(dates, ys)
-    # plt.gcf().autofmt_xdate()  #
+    ys = range(len(dates))
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m/%d/%Y'))
+    plt.gca().xaxis.set_major_locator(mdates.DayLocator())
+    # Plot
+    plt.plot(dates, ys)
+    plt.gcf().autofmt_xdate()  #
     plt.show()
+
 
 def main():
     '''
@@ -281,10 +255,11 @@ def main():
     sourcefolder = 'C3/'
     sourcefile = 'A3.csv'
     store_train_model(sourcefolder)
-    predict(sourcefolder) ## 开始预测
+    predict(sourcefolder)  ## 开始预测
     # seperate_train_data(sourcefolder,sourcefile)
     # weather_file = config.get_home_dir() + 'files/dataSets/testing_phase1/weather (table 7)_test1.csv'
     # get_weather_info(weather_file)
+
 
 def back_main():
     dates = ['01/02/1991', '01/03/1991', '01/04/1991']
@@ -298,9 +273,7 @@ def back_main():
     plt.show()
 
 
-
 if __name__ == '__main__':
     # main()
     ## get date array
-    # plot_data('A2/')
-    seperate_train_data('C3/','C3.csv')
+    plot_data()
