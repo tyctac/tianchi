@@ -25,6 +25,7 @@ time_windowset = ['08-00-00',
     '18-20-00',
     '18-40-00',
     ]
+folder_set = ['A2','A3','B1','B3','C1','C3']
 path = config.get_home_dir() + '/files/dataSets/training/task1/'
 
 def normalize_weather_info():
@@ -39,12 +40,13 @@ def normalize_weather_info():
         tmp_info = old_weather_dic[dat]
 
 
-def seperate_train_data(sourcefolder,sourcefile): ## sourcefolder : A2, sourcefile:A2.csv
+def seperate_train_data(sourcefolder,sourcefile): ## sourcefolder : A2, sourcefile:sourcefile_complete.csv
     '''
     source file is  :files/dataSets/training/task1/training_20min_avg_travel_time.csv
     :param sourcefile:
     :return:
     '''
+    sourcefile = 'sourcefile_complete.csv'
     in_file_name = path + sourcefolder + sourcefile
     fr = open(in_file_name,'r')
     fr.readline()
@@ -68,12 +70,14 @@ def seperate_train_data(sourcefolder,sourcefile): ## sourcefolder : A2, sourcefi
         # print valid_re
         # valid_re += 1
         tmp = []
-        the_traj = time_data[i].replace('""','').split(',')
+        the_traj = time_data[i].replace('"','').split(',')
         intersection_id = the_traj[0]
         tollgate_id  = the_traj[1]
         start_time = the_traj[2]
-        start_time = start_time[2:]
-        tm = datetime.strptime(start_time,"%Y-%m-%d %H:%M:%S")
+        start_time = start_time[1:]
+        print i
+        print sourcefolder
+        tm = datetime.strptime(start_time,"%Y-%m-%d %H:%M:%S") ##　将字符串变为时间
         weekday = tm.weekday()
         wds = [0.0,0.0,0.0,0.0,0.0,0.0,0.0]
         wds[weekday] = 1.0
@@ -277,11 +281,10 @@ def main():
     attention weather : train or test is differentf
     :return:
     '''
-
-    sourcefolder = 'C3/'
-    sourcefile = 'A3.csv'
-    store_train_model(sourcefolder)
-    predict(sourcefolder) ## 开始预测
+    for fder in folder_set:
+        sourcefolder = fder + '/'
+        store_train_model(sourcefolder)
+        predict(sourcefolder) ## 开始预测
     # seperate_train_data(sourcefolder,sourcefile)
     # weather_file = config.get_home_dir() + 'files/dataSets/testing_phase1/weather (table 7)_test1.csv'
     # get_weather_info(weather_file)
@@ -300,7 +303,6 @@ def back_main():
 
 
 if __name__ == '__main__':
-    # main()
+    main()
     ## get date array
     # plot_data('A2/')
-    seperate_train_data('C3/','C3.csv')

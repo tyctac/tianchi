@@ -38,7 +38,7 @@ def normalize_weather_info():
         tmp_info = old_weather_dic[dat]
 
 
-def seperate_train_data(sourcefolder, sourcefile):  ## sourcefolder : A2, sourcefile:A2.csv
+def seperate_train_data(sourcefolder, sourcefile):  ## sourcefolder : A2, sourcefile:sourcefile_complete.csv
     '''
     source file is  :files/dataSets/training/task1/training_20min_avg_travel_time.csv
     :param sourcefile:
