@@ -6,3 +6,5 @@
             **-**-**文件为对应的模型文件
             **-**-**_features.npy 文件为对应时间段的特征文件
             **-**-**_labels.npy 文件为对应时间段的label文件
+            exist_dic.json 文件为一个json对象文件，key为训练数据时间段的日期，value为当天不同时间段信息的字典（key为不同的时间窗口，value为该时间窗口对应的平均时间）
+                与weather_dic存取方式相同
