@@ -25,7 +25,7 @@ time_windowset = ['08-00-00',
     '18-20-00',
     '18-40-00',
     ]
-path = config.get_home_dir() + '/files/dataSets/training/task1/'
+path = config.get_home_dir() + 'files/dataSets/training/task1/'
 
 def complete_train_data(sourcefolder,sourcefile):
     '''
@@ -76,8 +76,22 @@ def complete_train_data(sourcefolder,sourcefile):
     rec_head = sourcefolder[0] + ','+sourcefolder[1] + ',"['  ## 每个记录的共同前缀
     ret_array = [] ## to write in a file
     restr = ''
+
+    ##　<<　ｇｅｎｅｒａｔｅ　ｎｅｗ  date_array
+    date1 = datetime.strptime('2016-07-19', '%Y-%m-%d')
+    date2 = datetime.strptime('2016-10-17', '%Y-%m-%d')
+    d1 = date1
+    date_array = []
+    while d1 <= date2:
+        date_array.append(d1.strftime('%Y-%m-%d'))
+        d1 = d1 + timedelta(days=1)
+    ## -->> generate new date_array
+
     for d in date_array:
-        date_dic = date_dic_dic[d]
+        if d in date_dic_dic:
+            date_dic = date_dic_dic[d]
+        else:
+            date_dic = {}
         for tm in time_windowset:
             tmp_rec = rec_head
             tm = tm.replace('-',':')
@@ -132,10 +146,12 @@ def complete_train_data(sourcefolder,sourcefile):
     f = open(out_file_name,'w')
     f.write(restr)
     print len(date_array)
+    return date_array
 
 
     ## <---- write to new file
 
 
 if __name__ == '__main__':
-    complete_train_data('C3/','C3.csv')
+    ## B1 没有8月26
+    complete_train_data('C3/','C3_backup.csv')

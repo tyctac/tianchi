@@ -2,14 +2,14 @@
 import math
 import json
 from datetime import datetime,timedelta
-from utils import config
+from utils import config,often_use
 import numpy
 import os,sys
 import xgboost
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pylab
-
+import add_deficiency_value
 
 route_set = ['B3','B1','A3','A2','C3','C1']
 time_windowset = ['08-00-00',
@@ -49,7 +49,7 @@ def seperate_train_data(sourcefolder,sourcefile): ## sourcefolder : A2, sourcefi
     sourcefile = 'sourcefile_complete.csv'
     in_file_name = path + sourcefolder + sourcefile
     fr = open(in_file_name,'r')
-    fr.readline()
+    # fr.readline()
     time_data = fr.readlines()
     fr.close()
     print time_data[0]
@@ -75,8 +75,6 @@ def seperate_train_data(sourcefolder,sourcefile): ## sourcefolder : A2, sourcefi
         tollgate_id  = the_traj[1]
         start_time = the_traj[2]
         start_time = start_time[1:]
-        print i
-        print sourcefolder
         tm = datetime.strptime(start_time,"%Y-%m-%d %H:%M:%S") ##　将字符串变为时间
         weekday = tm.weekday()
         wds = [0.0,0.0,0.0,0.0,0.0,0.0,0.0]
@@ -85,8 +83,11 @@ def seperate_train_data(sourcefolder,sourcefile): ## sourcefolder : A2, sourcefi
         ## 天气值应该都在吧,按照日期应该没有缺失??
         datestr = tm.strftime("%Y-%m-%d")
         timestr = tm.strftime("%H-%M-%S")
+        if timestr == '08-20-00':
+            print datestr
         if datestr not in weather_dic.keys():
             print '*************************************errorRRRRRRRRRRRRRR!********************'
+            print datestr
             continue
         else:
             tmpob = weather_dic[datestr]
@@ -116,6 +117,7 @@ def seperate_train_data(sourcefolder,sourcefile): ## sourcefolder : A2, sourcefi
             time_window_this_record['etas'] = etas
             store_dic[timestr] = time_window_this_record
     for k in store_dic.keys():
+        # print k
         feature = file_tmp_path + k + '_features'
         label = file_tmp_path + k + '_labels'
         ft = store_dic[k]['attrs']
@@ -123,11 +125,49 @@ def seperate_train_data(sourcefolder,sourcefile): ## sourcefolder : A2, sourcefi
         npary = numpy.array(ft,dtype = float)
         numpy.save(feature,npary)
         npary = numpy.array(ea,dtype = float)
+        # print len(npary)
         numpy.save(label,npary)
     f = open('date_set.txt','w')
     f.write('\n'.join(date_set))
     return
 
+def store_origin_label(sourcefolder): ## sourcefolder : A2, sourcefile:sourcefile_complete.csv
+    '''
+    source file is  :files/dataSets/training/task1/training_20min_avg_travel_time.csv
+    :param sourcefile:
+    :return:
+    '''
+    sourcefile = 'exist_dic.json'
+    f = open(path+sourcefolder + sourcefile,'r')
+    print type(f)
+    tpstr = f.read()
+    date_dic_dic = json.loads(tpstr)
+    jstr = open(config.get_home_dir() + 'files/dataSets/training/weather_info_json.txt','r').read()
+    file_tmp_path = path + sourcefolder
+    weather_dic = json.loads(jstr) ## 天气对象
+    date1 = datetime.strptime('2016-07-19', '%Y-%m-%d')
+    date2 = datetime.strptime('2016-10-17', '%Y-%m-%d')
+    d1 = date1
+    dates = []
+    real_value_array = []
+    tm_window_dic = {}
+    for tm in time_windowset:
+        tm_window_dic[tm] = []
+    while d1 <= date2:
+        if d1.month == 10 and d1.day == 10:  ##　TODO 仍然把10月十号去掉了
+            d1 = d1 + timedelta(days=1)
+            continue
+        dates.append(d1.date())
+        for tm in time_windowset:
+            dstr = d1.strftime('%Y-%m-%d')
+            x = date_dic_dic[dstr][tm]
+            tm_window_dic[tm].append(date_dic_dic[datetime.strftime(d1,'%Y-%m-%d')][tm])
+        d1 = d1 + timedelta(days=1)
+
+    out_filename = path + sourcefolder + 'tm_window_dic.json'
+    tm_dic_str = json.dumps(tm_window_dic)
+    f2 = open(out_filename,'w')
+    f2.write(tm_dic_str)
 
 def predict(sourcefolder):
     jstr = open(config.get_home_dir() + 'files/dataSets/training/weather_info_predict_json.txt', 'r').read()
@@ -238,20 +278,67 @@ def get_weather_info(fname): ## predict weather file : /home/zw/Documents/projec
     f = open(hir + 'files/dataSets/training/weather_info_predict_json.txt','w')
     f.write(retstr)
 
-def plot_data(source_folder):
+def plot_origin(source_folder):
+    '''
+    同plot_data_neighbor_average方法，不过是画出原始与与neighbor_value的对比，
+    :param source_folder:
+    :return:
+    '''
+    train_dates = often_use.get_train_date_array()
+    tm_wd_dic = json.loads(open(path+source_folder+'tm_window_dic.json','r').read())
+    ys_set = []
+    for tm in time_windowset:
+        filename = tm + '_labels.npy'
+        npy_path = path + source_folder + filename
+        ys_set.append(list(numpy.load(npy_path)))
+    ys_set_ori = []
+    for tm in time_windowset:
+        ys_set_ori.append(tm_wd_dic[tm])
+    for i in range(len(time_windowset)):
+        #     pylab.plot(dates,ys_set[i])
+        print train_dates
+        pylab.plot(train_dates, ys_set[i])
+        pylab.plot(train_dates,ys_set_ori[i])
+        pylab.xlabel('dates')
+        pylab.ylabel('eta')
+        pylab.title('eta of ' + time_windowset[i] + ' of ' + source_folder[:2])
+        plt.gcf().autofmt_xdate()
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
+        plt.gca().xaxis.set_major_locator(mdates.DayLocator())
+        # ys = range(len(dates))
+        # plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
+        # plt.gca().xaxis.set_major_locator(mdates.DayLocator())
+        # # Plot
+        # plt.plot(dates, ys)
+        # plt.gcf().autofmt_xdate()  # -fill-missing-with-neighbor-average :figure name
+        plt.grid(True)
+        plt.show()
+
+def plot_data_neighbor_average(source_folder):
+    '''
+    画出七月十九到十月十七之间的摸个时间段的曲线变化图
+    :param source_folder:
+    :return:
+    '''
     date1 = datetime.strptime('2016-07-19', '%Y-%m-%d')
     date2 = datetime.strptime('2016-10-17', '%Y-%m-%d')
     d1 = date1
     dates = []
     while d1 <= date2:
+        if d1.month == 10 and d1.day == 10:  ##　之前因为
+            d1 = d1 + timedelta(days=1)
+            continue
         dates.append(d1.date())
         d1 = d1 + timedelta(days=1)
-    i=1
-    for d in dates:
-        print i
-        i += 1
-        print d
 
+    # datearray = add_deficiency_value.complete_train_data('A3/','A3_backup.csv')
+    # print 'datearraylen: ',len(datearray)
+    i=1
+    # for d in dates:
+    #     print i
+    #     i += 1
+    #     print d
+    print 'datelen: ',len(dates)
     ## set 12 timewindowset -label
     ys_set = []
     for tm in time_windowset:
@@ -259,19 +346,23 @@ def plot_data(source_folder):
         npy_path = path + source_folder + filename
         ys_set.append(list(numpy.load(npy_path)))
     for i in range(len(time_windowset)):
+    #     pylab.plot(dates,ys_set[i])
+        print dates
         pylab.plot(dates,ys_set[i])
-    pylab.xlabel('dates')
-    pylab.ylabel('eta')
-    pylab.title('different time window  vs eta')
-
-
-    # ys = range(len(dates))
-    # plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m/%d/%Y'))
-    # plt.gca().xaxis.set_major_locator(mdates.DayLocator())
-    # # Plot
-    # plt.plot(dates, ys)
-    # plt.gcf().autofmt_xdate()  #
-    plt.show()
+        pylab.xlabel('dates')
+        pylab.ylabel('eta')
+        pylab.title('eta of ' + time_windowset[i] + ' of ' + source_folder[:2])
+        plt.gcf().autofmt_xdate()
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
+        plt.gca().xaxis.set_major_locator(mdates.DayLocator())
+        # ys = range(len(dates))
+        # plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
+        # plt.gca().xaxis.set_major_locator(mdates.DayLocator())
+        # # Plot
+        # plt.plot(dates, ys)
+        # plt.gcf().autofmt_xdate()  # -fill-missing-with-neighbor-average :figure name
+        plt.grid(True)
+        plt.show()
 
 def main():
     '''
@@ -303,6 +394,10 @@ def back_main():
 
 
 if __name__ == '__main__':
-    main()
-    ## get date array
-    # plot_data('A2/')
+    # main()
+    # get date array
+    # plot_data('C3/')
+    # seperate_train_data('C3/','sourcefile_complete.csv')
+    # plot_data('A3/')
+    # store_origin_label('A2/')  ## wait a minute
+    plot_origin('C3/')
